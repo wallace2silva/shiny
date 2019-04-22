@@ -1,0 +1,154 @@
+---
+title: "O1-E4 MALHA - MODEL 01 - 2017-04-15"
+output: flexdashboard::flex_dashboard
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+
+library(dplyr)
+library(ggplot2)
+
+setwd("C:/Users/walla/Dropbox/Data sets/WebApp/malha1")
+
+load("DATA_BSB_CGH_20170912.Rda") 
+df1<-track_data
+rm(track_data)
+
+load("DATA_CGH_CNF_20170921.Rda") 
+df2<-track_data
+rm(track_data)
+
+load("DATA_CGH_POA_20171006.Rda")
+df3<-track_data
+rm(track_data)
+
+load("DATA_GRU_POA_20170923.Rda")
+df4<-track_data
+rm(track_data)
+
+load("DATA_SSA_GRU_20170924.Rda")
+df5<-track_data
+rm(track_data)
+
+
+track_data<-rbind(df1,df2,df3,df4,df5)
+
+rm(df1,df2,df3,df4,df5)
+
+
+track_data <- track_data %>%  select (-c(speed,regist,code2))
+track_data <- track_data %>% mutate_if(is.factor,as.character)
+track_data <- track_data %>% mutate_if(is.character,as.factor)
+
+```
+
+Sidebar {.sidebar}
+=====================================
+
+```{r}
+dateInput("date", "Date input") 
+
+selectInput("orig","Origem:"   ,c("All",unique(as.character(track_data$orig    ))))
+selectInput("dest","Destino:"  ,c("All",unique(as.character(track_data$dest    ))))
+selectInput("equip","Aeronave:",c("All",unique(as.character(track_data$equip   ))))
+selectInput("id_icao","Id:"    ,c("All",unique(as.character(track_data$id_icao ))))
+
+```
+
+
+
+```{r}
+# Função para montagem do dat set de trabalho
+newdata <- reactive({
+  
+  data <- track_data
+  
+  if (input$orig    != "All") {data <- data[data$orig    == input$orig,    ]}
+  if (input$dest    != "All") {data <- data[data$dest    == input$dest,    ]}
+  if (input$equip   != "All") {data <- data[data$equip   == input$equip,   ]}
+  if (input$id_icao != "All") {data <- data[data$id_icao == input$id_icao, ]}
+  
+  filter_data <- data
+  return(filter_data)
+  
+})
+
+```
+
+Instruções
+=====================================  
+###  Welcome to O1-E4 Model 01
+Filtros:
+
+ 1. Data;
+ 2. Aeroporto de Origem; 
+ 3. Aeroporto de Destino;
+ 4. Modelo da Aeronave;
+ 5. Número do voo (id);
+ 
+Observações:
+
+- Os filtros indicados são dinâmicos, logo ao aplicar um filtro, você limita os dados em um modo de exibição específico;
+- Como o modo de exibição obtido após a aplicação de um filtro contém apenas registros com os valores que você selecionou, o restante dos dados permanece oculto até você limpar o filtro.
+- As análises estatísticas são realizadas tendo como referência os registros do modo de exibição selecionado;
+
+
+### Model 01:
+  1. Este app carrega no servidor um único arquivo de Banco de Dados;
+  2. O Banco de Dados armazendado no servidor é o track_data.Rda;
+  3. O track_data.Rda é uma reunião dos diferentes arquivos de dados do FR24;
+  4. A tab "Data Set" exibe todos os registros de voos contidos no track_data.Rda;
+  5. O rótulos dos filtros são obtidos dinamicamente do Banco de Dados track_data.Rda; 
+  
+track_data.Rda contém os registros dos seguintes arquivos de dados:
+
+  1. DATA_BSB_CGH_20170912.Rda;
+  2. DATA_CGH_CNF_20170921.Rda;
+  3. DATA_CGH_POA_20171006.Rda;
+  4. DATA_GRU_POA_20170923.Rda;
+  5. DATA_SSA_GRU_20170924.Rda;
+
+  
+
+Dat Set
+=====================================  
+### FR24
+    
+```{r}
+
+renderTable({ newdata() })
+
+```
+   
+Resumo
+=====================================     
+### Summary alt
+    
+```{r}
+
+verbatimTextOutput("summary")
+output$summary <- renderPrint({summary(newdata()$alt)})  
+
+```
+
+    
+Gráfico
+=====================================     
+### barplot
+    
+```{r}
+
+ plotOutput("BarPlot") 
+
+ output$BarPlot <- renderPlot({
+    
+  
+    g<-ggplot(newdata(), aes(newdata()$equip))
+    g + geom_bar()
+  
+  })
+
+```
+
+    
